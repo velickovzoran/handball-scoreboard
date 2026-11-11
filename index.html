@@ -86,6 +86,8 @@
         <button class="btn btn-lg btn-plus" data-score="home" data-delta="1">+1</button>
       </div>
 
+      <button class="btn btn-timeout" data-timeout="home">Тајм-аут домаќини</button>
+
       <h3>Исклучувања 2′</h3>
       <div class="susp-list" id="homeSuspList"></div>
     </section>
@@ -95,6 +97,12 @@
       <h2>Време</h2>
       <div class="clock-big" id="clock">00:00</div>
       <div class="clock-state" id="clockState">Запрено</div>
+
+      <div class="timeout-box" id="timeoutBox" hidden>
+        <span>Тајм-аут · <b id="timeoutTeam">Домаќини</b></span>
+        <b class="timeout-left" id="timeoutLeft">1:00</b>
+        <button class="btn btn-sm" id="timeoutCancel">Прекини</button>
+      </div>
 
       <div class="row gap">
         <button class="btn btn-xl btn-start" id="startBtn">Старт</button>
@@ -113,6 +121,8 @@
         <button class="seg" data-type="pioneers" role="radio">Пионери</button>
       </div>
       <div class="type-hint" id="typeHint"></div>
+
+      <button class="btn btn-buzz" id="buzzBtn" title="Сирена 3 секунди на Телевизорот">Сирена</button>
 
       <button class="btn btn-danger" id="resetBtn">Ресетирај сè</button>
     </section>
@@ -149,6 +159,8 @@
         <div class="score-big" id="awayScore">0</div>
         <button class="btn btn-lg btn-plus" data-score="away" data-delta="1">+1</button>
       </div>
+
+      <button class="btn btn-timeout" data-timeout="away">Тајм-аут гости</button>
 
       <h3>Исклучувања 2′</h3>
       <div class="susp-list" id="awaySuspList"></div>

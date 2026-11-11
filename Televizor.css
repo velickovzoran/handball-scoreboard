@@ -203,3 +203,26 @@ body {
 .pill.ending { border-color: var(--warn); }
 .pill.ending .tag { background: var(--warn); }
 .pill.ending .t { color: #ff8a80; }
+
+/* ---------- team timeout ---------- */
+
+.period.timeout { background: #f0a020; color: #111; }
+.team.on-timeout { border-top-color: #f0a020; box-shadow: 0 0 calc(var(--u) * 2.5) rgba(240, 160, 32, .35); }
+
+/* ---------- sound unlock banner (until the first click) ---------- */
+
+.sound-gate {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--u) * 1.5);
+  transform: translateX(-50%);
+  padding: calc(var(--u) * 1) calc(var(--u) * 2.2);
+  background: #f0a020;
+  color: #111;
+  border: 0;
+  border-radius: 999px;
+  font: 700 calc(var(--u) * 1.8) Bahnschrift, Arial, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 0 calc(var(--u) * 3) rgba(0, 0, 0, .8);
+}
+.sound-gate[hidden] { display: none; }

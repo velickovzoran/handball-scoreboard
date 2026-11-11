@@ -4,6 +4,8 @@
 const STORAGE_KEY = 'hb_scoreboard_v2';
 const SUSP_SECONDS = 120;   // 2-minute suspension
 const MAX_CLOCK = 99 * 60 + 59;
+const TIMEOUT_SECONDS = 60; // team timeout
+const BUZZ_MS = 3000;       // buzzer length
 const MATCH_TYPES = {
   seniors:  { label: 'Сениори', half: 30 * 60, full: 60 * 60 },
   pioneers: { label: 'Пионери', half: 20 * 60, full: 40 * 60 },
@@ -25,6 +27,11 @@ function defaultState(matchType) {
     matchType: MATCH_TYPES[matchType] ? matchType : 'seniors',
     // remaining seconds per slot; 0 = idle (no suspension)
     susp: { home: [0, 0, 0], away: [0, 0, 0] },
+    timeoutSide: '',    // 'home' / 'away' while a team timeout runs
+    timeoutEnd: 0,      // wall-clock ms when the timeout ends
+    timeoutLeft: 0,     // whole seconds left, rewritten every second for the TV
+    buzzSeq: 0,         // bumped on every buzzer; the TV plays when it changes
+    buzzAt: 0,          // wall-clock ms the buzzer was due (stale ones are not played)
   };
 }
 
@@ -45,6 +52,7 @@ function loadState() {
   }
   s.clock = clampInt(s.clock, 0, MAX_CLOCK);
   s.fracMs = clampInt(s.fracMs, 0, 999);
+  if (s.timeoutSide !== 'home' && s.timeoutSide !== 'away') s.timeoutSide = '';
   return s;
 }
 

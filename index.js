@@ -20,6 +20,7 @@ function commit() {
 // next Start, so stoppages don't add time to the match.
 function start() {
   if (state.running || state.clock >= MAX_CLOCK) return;
+  clearTimeoutState();                   // play resumes: a running timeout ends early
   state.running = true;
   state.tickRef = Date.now() - (state.fracMs || 0);
   state.fracMs = 0;
@@ -41,7 +42,7 @@ function pump() {
   let changed = false;
   while (state.running && now - state.tickRef >= 1000) {
     state.tickRef += 1000;
-    tick();
+    if (tick()) buzz(state.tickRef);     // half time / full time
     changed = true;
   }
   if (changed) commit();
@@ -49,14 +50,72 @@ function pump() {
 
 // One second of game time: advance the clock, count down every active suspension,
 // then stop automatically on half time / full time / 99:59.
+// Returns true when it stopped on half time or full time (the buzzer moments).
 function tick() {
   state.clock = Math.min(MAX_CLOCK, state.clock + 1);
   for (const side of SIDES) {
     state.susp[side] = state.susp[side].map(r => (r > 0 ? r - 1 : 0));
   }
   const t = MATCH_TYPES[state.matchType];
-  if (state.clock === t.half || state.clock === t.full || state.clock >= MAX_CLOCK) {
+  if (state.clock === t.half || state.clock === t.full) {
     state.running = false;
+    return true;
+  }
+  if (state.clock >= MAX_CLOCK) state.running = false;
+  return false;
+}
+
+// ---------- buzzer + team timeouts ----------
+// The buzzer itself plays on the TV page; here we only publish "buzz now" in the state.
+
+function buzz(at) {
+  state.buzzSeq += 1;
+  state.buzzAt = at || Date.now();
+}
+
+function buzzNow() {
+  buzz();
+  commit();
+}
+
+function clearTimeoutState() {
+  state.timeoutSide = '';
+  state.timeoutEnd = 0;
+  state.timeoutLeft = 0;
+}
+
+// Team timeout: every timer stops, the buzzer sounds, and a 1:00 countdown starts.
+function callTimeout(side) {
+  if (state.timeoutSide) return;
+  if (state.running) {
+    pump();
+    state.running = false;
+    state.fracMs = Math.max(0, Math.min(999, Date.now() - state.tickRef));
+  }
+  state.timeoutSide = side;
+  state.timeoutEnd = Date.now() + TIMEOUT_SECONDS * 1000;
+  state.timeoutLeft = TIMEOUT_SECONDS;
+  buzz();
+  commit();
+}
+
+function cancelTimeout() {
+  if (!state.timeoutSide) return;
+  clearTimeoutState();
+  commit();
+}
+
+// Runs with the clock pump. The timeout counts in real time (game clock is stopped);
+// at 0:00 it ends quietly (the buzzer only sounds when it starts) and the clock waits for Start.
+function pumpTimeout() {
+  if (!state.timeoutSide) return;
+  const left = Math.max(0, Math.ceil((state.timeoutEnd - Date.now()) / 1000));
+  if (left === 0) {
+    clearTimeoutState();
+    commit();
+  } else if (left !== state.timeoutLeft) {
+    state.timeoutLeft = left;
+    commit();
   }
 }
 
@@ -218,7 +277,15 @@ function render() {
   $('ovHomeScore').textContent = state.homeScore;
   $('ovAwayScore').textContent = state.awayScore;
   $('ovClock').textContent = fmtClock(state.clock);
-  $('ovPeriod').textContent = periodLabel(state);
+  // the stream shows only "ТАЈМ-АУТ" + team, without the countdown
+  const tLabel = state.timeoutSide
+    ? `ТАЈМ-АУТ ${state[state.timeoutSide + 'Short'] === '???' ? '' : state[state.timeoutSide + 'Short']}`.trim()
+    : periodLabel(state);
+  if ($('ovPeriod').textContent !== tLabel) {
+    $('ovPeriod').textContent = tLabel;
+    fitText($('ovPeriod'), 13, 8);
+  }
+  $('ovPeriod').classList.toggle('is-timeout', !!state.timeoutSide);
   const names = state.homeShort + '|' + state.awayShort;
   if (names !== lastNames) {
     lastNames = names;
@@ -238,6 +305,14 @@ function render() {
   $('startBtn').disabled = state.running || state.clock >= MAX_CLOCK;
   $('stopBtn').disabled = !state.running;
   SIDES.forEach(renderSuspList);
+
+  const to = state.timeoutSide;
+  $('timeoutBox').hidden = !to;
+  if (to) {
+    $('timeoutTeam').textContent = to === 'home' ? 'Домаќини' : 'Гости';
+    $('timeoutLeft').textContent = fmtSusp(state.timeoutLeft);
+  }
+  document.querySelectorAll('[data-timeout]').forEach(b => { b.disabled = !!to; });
 
   const t = MATCH_TYPES[state.matchType];
   document.querySelectorAll('.type-switch .seg').forEach(b => {
@@ -289,6 +364,10 @@ function init() {
   $('startBtn').addEventListener('click', start);
   $('stopBtn').addEventListener('click', stop);
   $('resetBtn').addEventListener('click', resetAll);
+  document.querySelectorAll('[data-timeout]').forEach(b =>
+    b.addEventListener('click', () => callTimeout(b.dataset.timeout)));
+  $('timeoutCancel').addEventListener('click', cancelTimeout);
+  $('buzzBtn').addEventListener('click', buzzNow);
   $('openTv').addEventListener('click', () => window.open('Televizor.html', 'televizor'));
 
   // Buttons drop focus after a click so Space can't "press" them again.
@@ -310,8 +389,9 @@ function init() {
   });
 
   commit();                 // publish current state (also normalises old/missing data)
-  setInterval(pump, 100);   // catches up immediately if the page was refreshed while running
+  setInterval(() => { pump(); pumpTimeout(); }, 100); // catches up at once after a refresh
   pump();
+  pumpTimeout();
 }
 
 init();

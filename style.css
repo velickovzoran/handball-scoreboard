@@ -437,3 +437,40 @@ body.is-running .clock-state { color: var(--green); }
   border: 1px dashed var(--line);
 }
 .logo-prev.has-logo { background-color: #fff; border: 2px solid #fff; }
+
+/* ---------- timeouts + buzzer ---------- */
+
+.btn-timeout {
+  border-color: #6b4a12;
+  color: #ffc861;
+  font-weight: 700;
+  padding: 11px 14px;
+}
+.btn-timeout:hover:not(:disabled) { background: #33270f; }
+
+.timeout-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #33270f;
+  border: 1px solid var(--amber);
+  color: #ffd98c;
+  border-radius: 10px;
+  padding: 8px 10px 8px 14px;
+  text-align: left;
+}
+.timeout-box[hidden] { display: none; }
+.timeout-left {
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  margin-left: auto;
+}
+
+.btn-buzz {
+  font-weight: 700;
+  border-color: #3b5568;
+}
+
+.ov-period.is-timeout { background: #f4c20d; color: #1b1b1b; }
