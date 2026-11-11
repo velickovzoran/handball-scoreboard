@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:,">
+  <title>Контролна табла – Ракомет</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ============ TOP: broadcast overlay (chroma key) ============ -->
+  <header class="top">
+    <div class="stage" id="stage" title="Оваа зона се сече во OBS/vMix и се клучува зелената боја">
+      <div class="ov">
+        <div class="ov-name ov-home"><span id="ovHomeName">???</span></div>
+        <div class="ov-name ov-away"><span id="ovAwayName">???</span></div>
+
+        <div class="ov-panel"></div>
+        <div class="ov-score ov-score-home" id="ovHomeScore">0</div>
+        <div class="ov-score ov-score-away" id="ovAwayScore">0</div>
+
+        <div class="ov-clock" id="ovClock">00:00</div>
+        <div class="ov-period" id="ovPeriod">1. ПОЛУВРЕМЕ</div>
+
+        <div class="ov-fed">
+          <img src="RFMlogo.png" alt="" onerror="this.parentNode.classList.add('no-img')">
+          <span class="ov-fed-fallback">РФМ</span>
+        </div>
+
+        <div class="ov-team-logo ov-tl-home" id="ovHomeLogo"><img alt=""></div>
+        <div class="ov-team-logo ov-tl-away" id="ovAwayLogo"><img alt=""></div>
+
+        <div class="ov-susp ov-susp-home" id="ovHomeSusp"></div>
+        <div class="ov-susp ov-susp-away" id="ovAwaySusp"></div>
+      </div>
+    </div>
+
+    <div class="top-side">
+      <h1>Ракомет · Контролна табла</h1>
+      <button class="btn btn-ghost" id="openTv">Отвори Телевизор ↗</button>
+      <details class="keys">
+        <summary>Кратенки на тастатура</summary>
+        <ul>
+          <li><kbd>Space</kbd> Старт / Стоп</li>
+          <li><kbd>Q</kbd> / <kbd>A</kbd> Домаќини +1 / −1</li>
+          <li><kbd>P</kbd> / <kbd>L</kbd> Гости +1 / −1</li>
+        </ul>
+      </details>
+    </div>
+  </header>
+
+  <!-- ============ CONTROLS ============ -->
+  <main class="grid">
+
+    <!-- HOME -->
+    <section class="card team" data-side="home">
+      <h2>Домаќини</h2>
+
+      <label class="field">
+        <span>Име на домашен тим <small>(емитување)</small></span>
+        <div class="row">
+          <input type="text" id="homeShortInput" maxlength="24" placeholder="пр. ВАРДАР">
+          <button class="btn" id="homeShortBtn">Додај тим 1</button>
+        </div>
+      </label>
+      <label class="field">
+        <span>Телевизор домашен тим <small>(цело име)</small></span>
+        <div class="row">
+          <input type="text" id="homeTvInput" maxlength="40" placeholder="пр. РК ВАРДАР 1961">
+          <button class="btn" id="homeTvBtn">Додај Телевизор Тим 1</button>
+        </div>
+      </label>
+      <div class="field">
+        <span>Лого на домашен тим</span>
+        <div class="logo-field">
+          <div class="logo-prev" id="homeLogoPrev"></div>
+          <label class="btn">Избери лого<input type="file" accept="image/*" id="homeLogoFile" hidden></label>
+          <button class="btn btn-ghost btn-sm" id="homeLogoClear">Отстрани</button>
+        </div>
+      </div>
+
+      <div class="score-ctl">
+        <button class="btn btn-lg btn-minus" data-score="home" data-delta="-1">−1</button>
+        <div class="score-big" id="homeScore">0</div>
+        <button class="btn btn-lg btn-plus" data-score="home" data-delta="1">+1</button>
+      </div>
+
+      <h3>Исклучувања 2′</h3>
+      <div class="susp-list" id="homeSuspList"></div>
+    </section>
+
+    <!-- CLOCK -->
+    <section class="card clock-card">
+      <h2>Време</h2>
+      <div class="clock-big" id="clock">00:00</div>
+      <div class="clock-state" id="clockState">Запрено</div>
+
+      <div class="row gap">
+        <button class="btn btn-xl btn-start" id="startBtn">Старт</button>
+        <button class="btn btn-xl btn-stop" id="stopBtn">Стоп</button>
+      </div>
+
+      <div class="adjust">
+        <button class="btn" data-adj="-60">Min −</button>
+        <button class="btn" data-adj="60">Min +</button>
+        <button class="btn" data-adj="-1">Sec −</button>
+        <button class="btn" data-adj="1">Sec +</button>
+      </div>
+
+      <div class="type-switch" role="radiogroup" aria-label="Тип на натпревар">
+        <button class="seg" data-type="seniors" role="radio">Сениори</button>
+        <button class="seg" data-type="pioneers" role="radio">Пионери</button>
+      </div>
+      <div class="type-hint" id="typeHint"></div>
+
+      <button class="btn btn-danger" id="resetBtn">Ресетирај сè</button>
+    </section>
+
+    <!-- AWAY -->
+    <section class="card team" data-side="away">
+      <h2>Гости</h2>
+
+      <label class="field">
+        <span>Име на гости <small>(емитување)</small></span>
+        <div class="row">
+          <input type="text" id="awayShortInput" maxlength="24" placeholder="пр. ЕУРОФАРМ П.">
+          <button class="btn" id="awayShortBtn">Додај тим 2</button>
+        </div>
+      </label>
+      <label class="field">
+        <span>Телевизор гости <small>(цело име)</small></span>
+        <div class="row">
+          <input type="text" id="awayTvInput" maxlength="40" placeholder="пр. РК ЕУРОФАРМ ПЕЛИСТЕР">
+          <button class="btn" id="awayTvBtn">Додај Телевизор Тим 2</button>
+        </div>
+      </label>
+      <div class="field">
+        <span>Лого на гости</span>
+        <div class="logo-field">
+          <div class="logo-prev" id="awayLogoPrev"></div>
+          <label class="btn">Избери лого<input type="file" accept="image/*" id="awayLogoFile" hidden></label>
+          <button class="btn btn-ghost btn-sm" id="awayLogoClear">Отстрани</button>
+        </div>
+      </div>
+
+      <div class="score-ctl">
+        <button class="btn btn-lg btn-minus" data-score="away" data-delta="-1">−1</button>
+        <div class="score-big" id="awayScore">0</div>
+        <button class="btn btn-lg btn-plus" data-score="away" data-delta="1">+1</button>
+      </div>
+
+      <h3>Исклучувања 2′</h3>
+      <div class="susp-list" id="awaySuspList"></div>
+    </section>
+
+  </main>
+
+  <script src="common.js"></script>
+  <script src="index.js"></script>
+</body>
+</html>

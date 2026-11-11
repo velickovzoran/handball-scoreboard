@@ -1,0 +1,288 @@
+<title>Scoreboard v2 Test Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+  /* Layout: single reading column; a scoreboard-style verdict strip up top, then findings, then evidence tables. */
+  :root {
+    --bg: #f5f7f9;
+    --surface: #ffffff;
+    --ink: #0f1a24;
+    --muted: #55677a;
+    --line: #dbe3ea;
+    --accent: #0077a3;        /* club blue, darkened for text contrast on light */
+    --accent-soft: #e2f2f9;
+    --ok: #1d7a45;
+    --ok-soft: #e3f4ea;
+    --warn: #9a5a00;
+    --warn-soft: #fbf0dc;
+    --bad: #c42a22;
+    --bad-soft: #fbe6e4;
+    --board: #0a1119;
+    --board-ink: #ffffff;
+    --font-display: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+    --font-body: "Source Sans 3", "Segoe UI", Arial, sans-serif;
+    --font-mono: "IBM Plex Mono", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b1117; --surface: #121b24; --ink: #e8eef3; --muted: #93a6b8; --line: #243442;
+      --accent: #33b5e5; --accent-soft: #0f2a38; --ok: #4cc27f; --ok-soft: #10281b;
+      --warn: #f0b04a; --warn-soft: #2e2210; --bad: #ff6b61; --bad-soft: #321614;
+      --board: #03070b; --board-ink: #ffffff; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1117; --surface: #121b24; --ink: #e8eef3; --muted: #93a6b8; --line: #243442;
+    --accent: #33b5e5; --accent-soft: #0f2a38; --ok: #4cc27f; --ok-soft: #10281b;
+    --warn: #f0b04a; --warn-soft: #2e2210; --bad: #ff6b61; --bad-soft: #321614;
+    --board: #03070b; --board-ink: #ffffff; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 16px/1.55 var(--font-body);
+  }
+  .wrap {
+    max-width: 920px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 40px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  h1, h2 { font-family: var(--font-display); font-weight: 700; text-wrap: balance; margin: 0; letter-spacing: .01em; }
+  h1 { font-size: clamp(34px, 6vw, 48px); line-height: 1.05; }
+  h2 { font-size: 26px; line-height: 1.15; }
+  p { margin: 0; max-width: 68ch; }
+  .eyebrow { font: 600 13px/1 var(--font-body); text-transform: uppercase; letter-spacing: .12em; color: var(--accent); }
+  .meta { color: var(--muted); font-size: 15px; }
+  section { display: flex; flex-direction: column; gap: 14px; }
+  code, .mono { font-family: var(--font-mono); font-size: .9em; }
+
+  header { display: flex; flex-direction: column; gap: 10px; }
+
+  /* verdict strip styled after the arena board */
+  .board {
+    background: var(--board);
+    color: var(--board-ink);
+    border-radius: 14px;
+    border-top: 5px solid #0098CF;
+    padding: 22px 24px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .stat { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .stat b { font: 700 52px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: #9fc3d8; }
+  .stat.good b { color: #5fd694; }
+  @media (max-width: 640px) { .board { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  .verdict {
+    background: var(--ok-soft);
+    border-left: 4px solid var(--ok);
+    border-radius: 0 10px 10px 0;
+    padding: 14px 18px;
+  }
+  .verdict strong { color: var(--ok); }
+
+  /* findings */
+  .finding {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 6px 14px;
+  }
+  .finding h3 { margin: 0; font-size: 17px; font-weight: 700; }
+  .finding p { color: var(--ink); }
+  .finding .body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .finding .ev { font-size: 14px; color: var(--muted); }
+  .pill {
+    display: inline-block;
+    font: 600 12px/1 var(--font-body);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: 5px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+    align-self: start;
+  }
+  .pill.fixed { background: var(--ok-soft); color: var(--ok); }
+  .pill.note { background: var(--warn-soft); color: var(--warn); }
+  .pill.open { background: var(--bad-soft); color: var(--bad); }
+  .pill.info { background: var(--accent-soft); color: var(--accent); }
+  .list { display: flex; flex-direction: column; gap: 10px; }
+
+  /* tables */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; background: var(--bg); }
+  tr:last-child td { border-bottom: 0; }
+  td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ok { color: var(--ok); font-weight: 700; }
+  .warn { color: var(--warn); font-weight: 700; }
+
+  ol.check { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; max-width: 70ch; }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Handball scoreboard v2 · Control Panel + Televizor</div>
+    <h1>Test report</h1>
+    <p class="meta">30 September 2026 · Tested in Chromium, served from a local server · Files: index.html, index.js, style.css, Televizor.html/.js/.css, common.js</p>
+  </header>
+
+  <div class="board" role="group" aria-label="Summary">
+    <div class="stat"><b>135</b><span>Checks run</span></div>
+    <div class="stat good"><b>41/41</b><span>Final regression</span></div>
+    <div class="stat"><b>3</b><span>Bugs found &amp; fixed</span></div>
+    <div class="stat good"><b>0</b><span>Open failures</span></div>
+  </div>
+
+  <div class="verdict">
+    <p><strong>Ready for match use.</strong> Every feature from the v2 spec behaves as described, the clock keeps exact time, and the TV follows the Control Panel within a millisecond. Before the first live match, do one quick run with the files opened straight from the folder (see “Not verified” below).</p>
+  </div>
+
+  <section>
+    <h2>Bugs found and fixed</h2>
+    <div class="list">
+      <div class="finding">
+        <span class="pill fixed">Fixed</span>
+        <div class="body">
+          <h3>Stopping the clock threw away the part of the second already run</h3>
+          <p>Every Stop lost up to 0.99 s, so the match (and suspensions) ran on average about half a second longer than real time per stoppage. With many timeouts and stoppages this adds up to several seconds per match. The clock now remembers the leftover milliseconds and continues from them on the next Start.</p>
+          <p class="ev">Evidence: 8 runs of 0.7 s each (5.67 s in total). Before the fix the clock showed <span class="mono">00:00</span>; after the fix <span class="mono">00:05</span>. Automatic stops still land exactly on 30:00 with nothing left over.</p>
+        </div>
+      </div>
+      <div class="finding">
+        <span class="pill fixed">Fixed</span>
+        <div class="body">
+          <h3>Long overlay names were cut off by a few pixels</h3>
+          <p>A 24-character name like <span class="mono">ЕУРОФАРМ ПЕЛИСТЕР БИТОЛА</span> still overflowed the red bar at the smallest allowed font. The minimum size was lowered so realistic names always fit.</p>
+          <p class="ev">Evidence: overflow of 4 px before, fits at 10 px after. Normal names like ВАРДАР stay at the full 22 px.</p>
+        </div>
+      </div>
+      <div class="finding">
+        <span class="pill fixed">Fixed</span>
+        <div class="body">
+          <h3>Three suspension badges touched the team logo circle</h3>
+          <p>With a team logo shown and all three suspensions running, the outer badge sat right against the circle. The badges are now slightly more compact.</p>
+          <p class="ev">Evidence: gap between badges and logo went from 0 px to 21 px on both sides.</p>
+        </div>
+      </div>
+      <div class="finding">
+        <span class="pill fixed">Fixed</span>
+        <div class="body">
+          <h3>Small clean-ups</h3>
+          <p>Removed the browser's <span class="mono">favicon.ico</span> 404 error on both pages, fixed a 0.01 px rounding overshoot of the TV board on ultra-wide screens, and made Start safe if an old cached copy of <span class="mono">common.js</span> is loaded next to a newer <span class="mono">index.js</span>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Results by feature</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Area</th><th>What was checked</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Game clock</td><td>Counts up, Start/Stop, buttons enable/disable, 99:59 cap, Start refused at 99:59, catch-up after the browser throttles timers</td><td class="ok">Pass</td></tr>
+          <tr><td>Automatic stops</td><td>Stops exactly on 30:00 and 60:00, resumes to 30:01, runs past 60:00 with no more stops, manual set to 30:00 does not trigger, moving back below 30:00 re-arms the stop</td><td class="ok">Pass</td></tr>
+          <tr><td>Match type</td><td>Pioneers stop at 20:00 and 40:00 and not at 30:00; switching at 25:00 skips 20:00; switch locked while running; kept after Reset and refresh; hint text updates</td><td class="ok">Pass</td></tr>
+          <tr><td>Period strip</td><td>1. ПОЛУВРЕМЕ → ПАУЗА → 2. ПОЛУВРЕМЕ → КРАЈ → ПРОДОЛЖЕНИЕ, for both match types</td><td class="ok">Pass</td></tr>
+          <tr><td>2-min suspensions</td><td>Arming does not start the clock, frozen while stopped, runs with the clock, armed-while-running starts next second, no restart on double press, slot Reset, expires and clears, paused by automatic stop, carries into the 2nd half, all 6 at once</td><td class="ok">Pass</td></tr>
+          <tr><td>Min/Sec buttons</td><td>All limits (00:00, 99:59, Min− under a minute), work while running, reach the TV; started suspensions move the opposite way, capped at 02:00, cleared at 00:00, armed ones untouched</td><td class="ok">Pass</td></tr>
+          <tr><td>Score</td><td>+1/−1 on panel, overlay and TV; never below 0; 3-digit score fits the overlay box</td><td class="ok">Pass</td></tr>
+          <tr><td>Keyboard shortcuts</td><td>Space, Q/A, P/L work; ignored while typing a name, when a key is held down, and with Ctrl</td><td class="ok">Pass</td></tr>
+          <tr><td>Team names</td><td>Trimmed, uppercase, Enter key applies, empty overlay name falls back to ???, TV name falls back to overlay name, long names fit on overlay and wrap on TV</td><td class="ok">Pass</td></tr>
+          <tr><td>Team logos</td><td>3000×2000 photo (468 KB) shrunk to 200×133 and stored as 63 KB; transparent PNG keeps transparency; a text file shows “Сликата не може да се отвори.” and keeps the old logo; Отстрани removes it</td><td class="ok">Pass</td></tr>
+          <tr><td>Full Reset</td><td>Asks the confirmation question, Cancel changes nothing, clears clock, scores, names, inputs, suspensions and logos, nothing keeps ticking, next +1 gives 1, match type kept</td><td class="ok">Pass</td></tr>
+          <tr><td>Refresh mid-match</td><td>Refreshing the Control Panel while the clock runs keeps the match: 4.6 s later it showed 10:04 from 10:00, still running, suspension and names restored</td><td class="ok">Pass</td></tr>
+          <tr><td>Damaged saved data</td><td>Broken or out-of-range data in storage falls back to safe values instead of breaking the page</td><td class="ok">Pass</td></tr>
+          <tr><td>TV page loads</td><td>Only its own HTML, CSS and JS; no image requests, no console errors</td><td class="ok">Pass</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Timing and sync measurements</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Measurement</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Real clock run</td><td class="num">17.91 s real → 00:17 shown</td></tr>
+          <tr><td>Gap between TV clock updates</td><td class="num">984 – 1020 ms</td></tr>
+          <tr><td>Delay from Control Panel change to TV update</td><td class="num">0 – 1 ms (5 of 5 changes)</td></tr>
+          <tr><td>Suspension vs clock during a real run</td><td class="num">02:00 → 01:43 while clock 00:00 → 00:17</td></tr>
+          <tr><td>Stop/start bursts (after fix)</td><td class="num">5.67 s → 00:05</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Televizor at different screens</h2>
+    <p>The board keeps a 16:9 shape and scales to fit. Nothing spilled outside the board and no text was cut off at any size.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Screen</th><th>Clock digits</th><th>Score digits</th><th>Fit</th></tr></thead>
+        <tbody>
+          <tr><td>1280 × 720 (HD)</td><td class="num">160 px</td><td class="num">243 px</td><td class="ok">Full screen</td></tr>
+          <tr><td>1366 × 768 (laptop)</td><td class="num">171 px</td><td class="num">259 px</td><td class="ok">Full screen</td></tr>
+          <tr><td>1920 × 1080 (Full HD TV)</td><td class="num">240 px</td><td class="num">365 px</td><td class="ok">Full screen</td></tr>
+          <tr><td>3840 × 2160 (4K TV)</td><td class="num">480 px</td><td class="num">730 px</td><td class="ok">Full screen</td></tr>
+          <tr><td>2560 × 1080 (ultra-wide)</td><td class="num">240 px</td><td class="num">365 px</td><td class="warn">Black bars left/right</td></tr>
+          <tr><td>1024 × 768, 1280 × 1024 (4:3, 5:4)</td><td class="num">128 – 160 px</td><td class="num">195 – 243 px</td><td class="warn">Black bars top/bottom</td></tr>
+          <tr><td>1080 × 1920 (portrait)</td><td class="num">135 px</td><td class="num">205 px</td><td class="warn">Small, centred</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Not verified</h2>
+    <div class="list">
+      <div class="finding">
+        <span class="pill open">Check once</span>
+        <div class="body">
+          <h3>Opening the files straight from the folder (file://)</h3>
+          <p>All tests ran through a local server because the test browser cannot run pages from disk. The code uses nothing that needs a server, so it should behave the same. Before the first match, open both files in Chrome or Edge by double-clicking, press +1 and Start, and confirm the TV follows.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Known limitations</h2>
+    <p>These are not bugs, but they are useful to know on match day.</p>
+    <div class="list">
+      <div class="finding"><span class="pill note">Browser</span><div class="body"><h3>Use Chrome or Edge, and keep only one Control Panel open</h3><p>Firefox does not share saved data between files opened from a folder, so the TV would stay empty. Two open Control Panels would overwrite each other's data.</p></div></div>
+      <div class="finding"><span class="pill note">Reset</span><div class="body"><h3>The Reset dialog pauses screen updates while it is open</h3><p>While “Дали сте сигурни…” is on screen the overlay and TV do not update. If you cancel, the clock jumps to the correct time straight away, so no time is lost.</p></div></div>
+      <div class="finding"><span class="pill note">Clock</span><div class="body"><h3>Min+ across 30:00 skips the half-time stop</h3><p>As the spec requires, manual changes never trigger automatic stops. If you press Min+ at 29:30 while running, the clock goes to 30:30 and will not stop at half time.</p></div></div>
+      <div class="finding"><span class="pill note">Suspensions</span><div class="body"><h3>A suspension pushed back to exactly 02:00 is treated as “armed”</h3><p>After Sec−/Min− brings a running suspension back to 02:00, further Min/Sec presses leave it alone. It still counts down normally when the clock runs.</p></div></div>
+      <div class="finding"><span class="pill note">Overlay</span><div class="body"><h3>Keep overlay names short</h3><p>Names up to about 14 characters show at full size. Longer names shrink, and the 24-character maximum ends up around 10 px, which is hard to read on a stream.</p></div></div>
+      <div class="finding"><span class="pill note">Reset</span><div class="body"><h3>Reset also removes both team logos</h3><p>For back-to-back matches with the same team, upload its logo again after Reset.</p></div></div>
+      <div class="finding"><span class="pill info">Refresh</span><div class="body"><h3>A Control Panel left “running” and closed catches up when reopened</h3><p>If the page is closed while the clock runs and opened again later, the clock adds the missed time and stops at the next automatic stop. Press Stop before closing the page.</p></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Before the first live match</h2>
+    <ol class="check">
+      <li>Double-click <span class="mono">index.html</span>, press <b>Отвори Телевизор</b>, drag that window to the arena TV and double-click it for full screen.</li>
+      <li>Enter short and full team names, upload both logos, and check the stream crop in OBS/vMix (green area is 760 × 160 px, top-left of the page).</li>
+      <li>Press Start for a few seconds, add a goal and arm a suspension, and watch the TV and overlay follow. Then press <b>Ресетирај сè</b>.</li>
+    </ol>
+  </section>
+
+</div>

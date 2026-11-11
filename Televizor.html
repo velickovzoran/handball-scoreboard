@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:,">
+  <title>Телевизор – Ракомет</title>
+  <link rel="stylesheet" href="Televizor.css">
+</head>
+<body>
+  <div class="board">
+
+    <div class="clock-frame">
+      <div class="clock" id="clock">00:00</div>
+      <div class="period" id="period">1. ПОЛУВРЕМЕ</div>
+    </div>
+
+    <section class="team home">
+      <header class="team-head">
+        <div class="logo" id="homeLogo"><img alt=""></div>
+        <div class="name"><span id="homeName">???</span></div>
+      </header>
+      <div class="score" id="homeScore">0</div>
+    </section>
+
+    <section class="team away">
+      <header class="team-head">
+        <div class="name"><span id="awayName">???</span></div>
+        <div class="logo" id="awayLogo"><img alt=""></div>
+      </header>
+      <div class="score" id="awayScore">0</div>
+    </section>
+
+    <div class="susp home-susp" id="homeSusp"></div>
+    <div class="susp away-susp" id="awaySusp"></div>
+
+  </div>
+
+  <script src="common.js"></script>
+  <script src="Televizor.js"></script>
+</body>
+</html>

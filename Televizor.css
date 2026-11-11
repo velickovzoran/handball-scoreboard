@@ -1,0 +1,205 @@
+/* ================= Arena TV =================
+   Classic hall scoreboard: clock on top with each team's suspensions in the
+   top corner on its side, teams with giant scores below.
+   Everything is sized in --u (1/100 of a 16:9 board that fits the screen),
+   so it looks the same on any TV or LED wall resolution. */
+
+:root {
+  --accent: #0098CF;
+  --accent-deep: #006a91;
+  --bg: #03060a;
+  --panel: #0a1119;
+  --panel-2: #0e1822;
+  --line: #173043;
+  --text: #ffffff;
+  --muted: #7fa3bb;
+  --warn: #ff4a3d;
+  --u: min(1vw, 1.7777vh);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  cursor: none;
+  user-select: none;
+}
+
+body {
+  display: grid;
+  place-items: center;
+  font-family: Bahnschrift, "DIN Alternate", "Arial Narrow", Arial, sans-serif;
+  font-weight: 700;
+}
+
+.board {
+  width: calc(var(--u) * 100);
+  height: calc(var(--u) * 56.25);
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 2);
+  display: grid;
+  /* the two middle columns together hold the 40u clock */
+  grid-template-columns: 1fr calc(var(--u) * 19) calc(var(--u) * 19) 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "hsusp clock clock asusp"
+    "home  home  away  away";
+  column-gap: calc(var(--u) * 2);
+  row-gap: calc(var(--u) * 1.2);
+  background:
+    radial-gradient(ellipse 60% 45% at 50% 0%, rgba(0, 152, 207, .22), transparent 70%);
+}
+
+/* ---------- clock ---------- */
+
+.clock-frame {
+  grid-area: clock;
+  justify-self: stretch;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: calc(var(--u) * .3) solid var(--accent);
+  border-radius: calc(var(--u) * 1.2);
+  overflow: hidden;
+  text-align: center;
+  box-shadow:
+    0 0 calc(var(--u) * 3) rgba(0, 152, 207, .35),
+    inset 0 0 calc(var(--u) * 4) rgba(0, 0, 0, .7);
+}
+
+.clock {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--u) * 12.5);
+  line-height: 1;
+  padding: calc(var(--u) * 1.3) 0 calc(var(--u) * .7);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.01em;
+}
+
+.period {
+  background: var(--accent);
+  font-size: calc(var(--u) * 2.4);
+  line-height: 1;
+  padding: calc(var(--u) * .75) 0 calc(var(--u) * .65);
+  letter-spacing: .12em;
+}
+
+/* ---------- teams ---------- */
+
+.team {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: calc(var(--u) * .2) solid var(--line);
+  border-top: calc(var(--u) * .6) solid var(--accent);
+  border-radius: calc(var(--u) * 1.2);
+  overflow: hidden;
+}
+.home { grid-area: home; }
+.away { grid-area: away; }
+
+.team-head {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 1.4);
+  flex: none;
+  height: calc(var(--u) * 7.4);
+  padding: 0 calc(var(--u) * 1.4);
+  border-bottom: calc(var(--u) * .2) solid var(--line);
+}
+
+.logo {
+  flex: none;
+  width: calc(var(--u) * 5.8);
+  height: calc(var(--u) * 5.8);
+  border-radius: 50%;
+  background: #fff;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 0 0 calc(var(--u) * .3) var(--accent);
+}
+.logo.has-logo { display: flex; }
+.logo img { width: 84%; height: 84%; object-fit: contain; }
+
+.name {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+.name span {
+  display: block;
+  width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  line-height: 1.05;
+  font-size: calc(var(--u) * 3.8);
+}
+.home .name span { text-align: left; }
+.away .name span { text-align: right; }
+
+.score {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--u) * 22);
+  line-height: .9;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+  padding-top: calc(var(--u) * 1);
+  text-shadow: 0 0 calc(var(--u) * 3) rgba(255, 255, 255, .18);
+}
+
+/* ---------- suspensions ---------- */
+
+.susp {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: calc(var(--u) * .8);
+  min-width: 0;
+}
+.home-susp { grid-area: hsusp; align-items: flex-start; }
+.away-susp { grid-area: asusp; align-items: flex-end; }
+
+.pill {
+  display: flex;
+  align-items: stretch;
+  height: calc(var(--u) * 6.6);
+  border-radius: calc(var(--u) * .8);
+  overflow: hidden;
+  background: var(--panel);
+  border: calc(var(--u) * .25) solid var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.pill .tag {
+  display: flex;
+  align-items: center;
+  padding: 0 calc(var(--u) * 1.2);
+  background: var(--accent);
+  font-size: calc(var(--u) * 3.3);
+}
+.pill .t {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(var(--u) * 13.5);
+  padding: 0 calc(var(--u) * 1.4);
+  font-size: calc(var(--u) * 5.2);
+}
+.pill.ending { border-color: var(--warn); }
+.pill.ending .tag { background: var(--warn); }
+.pill.ending .t { color: #ff8a80; }
