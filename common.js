@@ -5,7 +5,7 @@ const STORAGE_KEY = 'hb_scoreboard_v2';
 const SUSP_SECONDS = 120;   // 2-minute suspension
 const MAX_CLOCK = 99 * 60 + 59;
 const TIMEOUT_SECONDS = 60; // team timeout
-const BUZZ_MS = 3000;       // buzzer length
+const BUZZ_MS = 2000;       // buzzer length (buzzer.mp3 sounds for ~1.9 s)
 const MATCH_TYPES = {
   seniors:  { label: 'Сениори', half: 30 * 60, full: 60 * 60 },
   pioneers: { label: 'Пионери', half: 20 * 60, full: 40 * 60 },
@@ -27,6 +27,7 @@ function defaultState(matchType) {
     matchType: MATCH_TYPES[matchType] ? matchType : 'seniors',
     // remaining seconds per slot; 0 = idle (no suspension)
     susp: { home: [0, 0, 0], away: [0, 0, 0] },
+    suspNo: { home: ['', '', ''], away: ['', '', ''] }, // jersey number per suspension slot
     timeoutSide: '',    // 'home' / 'away' while a team timeout runs
     timeoutEnd: 0,      // wall-clock ms when the timeout ends
     timeoutLeft: 0,     // whole seconds left, rewritten every second for the TV
@@ -41,13 +42,20 @@ function loadState() {
   const s = defaultState(raw && raw.matchType);
   if (!raw || typeof raw !== 'object') return s;
   for (const k of Object.keys(s)) {
-    if (k === 'susp') continue;
+    if (k === 'susp' || k === 'suspNo') continue;
     if (typeof raw[k] === typeof s[k]) s[k] = raw[k];
   }
   if (raw.susp) {
     for (const side of ['home', 'away']) {
       const arr = raw.susp[side];
       if (Array.isArray(arr)) s.susp[side] = [0, 1, 2].map(i => clampInt(arr[i], 0, SUSP_SECONDS));
+    }
+  }
+  if (raw.suspNo) {
+    for (const side of ['home', 'away']) {
+      const nos = raw.suspNo[side];
+      // a number only belongs to a running suspension
+      if (Array.isArray(nos)) s.suspNo[side] = [0, 1, 2].map(i => (s.susp[side][i] > 0 ? cleanJersey(nos[i]) : ''));
     }
   }
   s.clock = clampInt(s.clock, 0, MAX_CLOCK);
@@ -58,6 +66,11 @@ function loadState() {
 
 function saveState(s) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch (e) { /* storage full or blocked */ }
+}
+
+// Jersey numbers: digits only, at most 2 ("07" stays "07").
+function cleanJersey(v) {
+  return String(v == null ? '' : v).replace(/\D/g, '').slice(0, 2);
 }
 
 function clampInt(n, min, max) {

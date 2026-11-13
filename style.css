@@ -350,7 +350,7 @@ input[type=text]:focus { outline: 2px solid var(--accent); border-color: transpa
 
 .susp-row {
   display: grid;
-  grid-template-columns: 28px 1fr auto auto;
+  grid-template-columns: 22px 52px 1fr auto auto;
   align-items: center;
   gap: 10px;
   background: var(--bg);
@@ -474,3 +474,24 @@ body.is-running .clock-state { color: var(--green); }
 }
 
 .ov-period.is-timeout { background: #f4c20d; color: #1b1b1b; }
+
+/* ---------- jersey number per suspension ---------- */
+
+.susp-no {
+  width: 52px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 6px 4px;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.susp-no:focus { outline: 2px solid var(--accent); border-color: transparent; }
+.susp-no:disabled { opacity: 1; background: transparent; border-color: transparent; color: var(--amber); }
+.susp-no::placeholder { color: #55606d; }
+.susp-no:disabled::placeholder { color: transparent; } /* running without a number: show nothing */

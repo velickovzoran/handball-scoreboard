@@ -53,29 +53,34 @@ function playHorn(ms) {
   }
 }
 
-// buzzer.wav from the project folder. A plain <audio> element is used because it also
+// buzzer.mp3 from the project folder. A plain <audio> element is used because it also
 // plays when the page is opened straight from disk (file://). If the file is missing or
 // can't be played, the generated horn above is used instead.
-const buzzerFile = new Audio('buzzer.wav');
+// The file starts with ~0.19 s of silence, so playback starts there for an instant buzz.
+const BUZZER_START = 0.19;
+const buzzerFile = new Audio('buzzer.mp3');
 buzzerFile.preload = 'auto';
 let buzzerFileOk = false;
 let buzzerTimers = [];
 buzzerFile.addEventListener('canplaythrough', () => { buzzerFileOk = true; });
 buzzerFile.addEventListener('error', () => { buzzerFileOk = false; });
+buzzerFile.addEventListener('loadedmetadata', () => { buzzerFile.currentTime = BUZZER_START; });
+buzzerFile.addEventListener('ended', () => { buzzerFile.currentTime = BUZZER_START; });
 
-// Plays the file for `ms`, then fades it out over 150 ms (the file is longer than a buzz).
+// Plays the file for `ms`, then fades it out over 150 ms (in case the file is longer).
+// Between buzzes the element is kept parked at BUZZER_START, so play() starts without a seek.
 function playBuzzerFile(ms) {
   buzzerTimers.forEach(clearTimeout);
   buzzerTimers = [];
-  buzzerFile.pause();
-  buzzerFile.currentTime = 0;
   buzzerFile.volume = 1;
+  if (!buzzerFile.paused) buzzerFile.pause();
+  if (Math.abs(buzzerFile.currentTime - BUZZER_START) > 0.01) buzzerFile.currentTime = BUZZER_START;
   buzzerFile.play().catch(() => playHorn(ms));
   const fadeStart = Math.max(0, ms - 150);
   for (let i = 1; i <= 5; i++) {
     buzzerTimers.push(setTimeout(() => {
       buzzerFile.volume = Math.max(0, 1 - i / 5);
-      if (i === 5) buzzerFile.pause();
+      if (i === 5) { buzzerFile.pause(); buzzerFile.currentTime = BUZZER_START; }
     }, fadeStart + i * 30));
   }
 }
@@ -115,9 +120,10 @@ function fitName(el, maxPx) {
   }
 }
 
-function renderSusp(boxId, arr) {
-  const html = arr.filter(r => r > 0).map(r =>
-    `<div class="pill${r <= 10 ? ' ending' : ''}"><span class="tag">2′</span><span class="t">${fmtSusp(r)}</span></div>`
+// The tag shows the player's jersey number, or 2′ when none was entered.
+function renderSusp(boxId, arr, numbers) {
+  const html = arr.map((r, i) => [r, numbers[i]]).filter(([r]) => r > 0).map(([r, no]) =>
+    `<div class="pill${r <= 10 ? ' ending' : ''}"><span class="tag${no ? ' no' : ''}">${no || '2′'}</span><span class="t">${fmtSusp(r)}</span></div>`
   ).join('');
   const box = $(boxId);
   if (box.innerHTML !== html) box.innerHTML = html;
@@ -169,8 +175,8 @@ function refresh(force) {
     fitName($('awayName'), max);
   }
 
-  renderSusp('homeSusp', s.susp.home);
-  renderSusp('awaySusp', s.susp.away);
+  renderSusp('homeSusp', s.susp.home, s.suspNo.home);
+  renderSusp('awaySusp', s.susp.away, s.suspNo.away);
 }
 
 window.addEventListener('storage', () => refresh());

@@ -226,3 +226,11 @@ body {
   box-shadow: 0 0 calc(var(--u) * 3) rgba(0, 0, 0, .8);
 }
 .sound-gate[hidden] { display: none; }
+
+/* the tag holds the jersey number or 2′; one fixed width so stacked boxes line up */
+.pill .tag {
+  width: calc(var(--u) * 6.4);
+  padding: 0;
+  justify-content: center;
+}
+.pill .tag.no { font-size: calc(var(--u) * 4); }

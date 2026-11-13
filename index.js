@@ -56,6 +56,7 @@ function tick() {
   for (const side of SIDES) {
     state.susp[side] = state.susp[side].map(r => (r > 0 ? r - 1 : 0));
   }
+  clearEndedNumbers();
   const t = MATCH_TYPES[state.matchType];
   if (state.clock === t.half || state.clock === t.full) {
     state.running = false;
@@ -131,6 +132,7 @@ function adjust(delta) {
     state.susp[side] = state.susp[side].map(r =>
       (r > 0 && r < SUSP_SECONDS) ? Math.max(0, Math.min(SUSP_SECONDS, r - applied)) : r);
   }
+  clearEndedNumbers();
   state.clock = c;
   if (c >= MAX_CLOCK) state.running = false;
   commit();
@@ -146,15 +148,25 @@ function changeScore(side, delta) {
 
 // ---------- suspensions ----------
 
-function armSuspension(side, i) {
+// `number` is the jersey number typed in that row ('' = none, the TV then shows 2′).
+function armSuspension(side, i, number) {
   if (state.susp[side][i] > 0) return; // already active: don't restart
   state.susp[side][i] = SUSP_SECONDS;
+  state.suspNo[side][i] = cleanJersey(number);
   commit();
 }
 
 function cancelSuspension(side, i) {
   state.susp[side][i] = 0;
+  state.suspNo[side][i] = '';
   commit();
+}
+
+// A slot that is no longer active forgets its jersey number.
+function clearEndedNumbers() {
+  for (const side of SIDES) {
+    state.suspNo[side] = state.suspNo[side].map((n, i) => (state.susp[side][i] > 0 ? n : ''));
+  }
 }
 
 // ---------- names ----------
@@ -230,6 +242,7 @@ function resetAll() {
   if (!confirm('Дали сте сигурни дека сакате да ресетирате сè?')) return;
   state = defaultState(state.matchType);
   for (const id of ['homeShortInput', 'awayShortInput', 'homeTvInput', 'awayTvInput']) $(id).value = '';
+  document.querySelectorAll('.susp-no').forEach(el => { el.value = ''; });
   saveLogo('home', '');
   saveLogo('away', '');
   renderLogos();
@@ -246,10 +259,15 @@ function renderSuspList(side) {
       row.className = 'susp-row';
       row.innerHTML =
         `<span class="susp-idx">${i + 1}</span>` +
+        `<input class="susp-no" id="${side}SuspNo${i}" type="text" inputmode="numeric" maxlength="2" placeholder="#" autocomplete="off" aria-label="Број на играч, исклучување ${i + 1}">` +
         `<span class="susp-time">02:00</span>` +
         `<button class="btn btn-arm">02:00</button>` +
         `<button class="btn btn-ghost btn-sm">Reset</button>`;
-      row.querySelector('.btn-arm').addEventListener('click', () => armSuspension(side, i));
+      const no = row.querySelector('.susp-no');
+      const arm = () => armSuspension(side, i, no.value);
+      no.addEventListener('input', () => { no.value = cleanJersey(no.value); });
+      no.addEventListener('keydown', e => { if (e.key === 'Enter') arm(); });
+      row.querySelector('.btn-arm').addEventListener('click', arm);
       row.querySelector('.btn-sm').addEventListener('click', () => cancelSuspension(side, i));
       list.appendChild(row);
     }
@@ -261,6 +279,12 @@ function renderSuspList(side) {
     row.classList.toggle('counting', active && state.running);
     row.querySelector('.susp-time').textContent = active ? fmtClock(r) : '02:00';
     row.querySelector('.btn-arm').disabled = active;
+    // while active the box shows the stored number (locked); when the slot ends it is emptied once
+    const no = row.querySelector('.susp-no');
+    if (active) no.value = state.suspNo[side][i];
+    else if (row.dataset.wasActive === '1') no.value = '';
+    no.disabled = active;
+    row.dataset.wasActive = active ? '1' : '0';
   });
 }
 
@@ -389,7 +413,9 @@ function init() {
   });
 
   commit();                 // publish current state (also normalises old/missing data)
-  setInterval(() => { pump(); pumpTimeout(); }, 100); // catches up at once after a refresh
+  // checked every 20 ms so the half/full-time stop (and its buzzer) fire within 20 ms of the second;
+  // also catches up at once after a refresh
+  setInterval(() => { pump(); pumpTimeout(); }, 20);
   pump();
   pumpTimeout();
 }
